@@ -1,8 +1,7 @@
+import os.path
 import random
 
-import EncryptionConstants
-
-PATH = "sample_text.txt"
+from FileInteractionMethods.EncryptionMethods import EncryptionConstants
 
 
 # This function computes four large prime numbers representing the communicating parties' private and public keys
@@ -48,12 +47,12 @@ def generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2
 # For DH encryption, we are simply going to add the full_key to each character's ASCII value, obtaining a sequence of numbers
 # which we will then turn back to characters and write the result in a separate file
 # Path refers to the path of the original file
-def encrypt(path, pub_key1, priv_key1, pub_key2, priv_key2):
+def encrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
     partial_key1, partial_key2 = generate_partial_keys(pub_key1, priv_key1, pub_key2, priv_key2)
     print("[DH ENCRYPTION] The two partial keys are " + str(partial_key1) + " and " + str(partial_key2))
     full_key = generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2)
     print("[DH ENCRYPTION] The full key is " + str(full_key))
-    file = open(path, "r")
+    file = open(before_path, "r")
     plaintext = file.read()
     print("[DH ENCRYPTION] Plaintext is \'" + plaintext + "\'")
     ascii_characters = [ord(ch) for ch in plaintext]
@@ -63,20 +62,23 @@ def encrypt(path, pub_key1, priv_key1, pub_key2, priv_key2):
         ciphertext += str(x)
     print("[DH ENCRYPTION] Ciphertext is \'" + ciphertext + "\'")
 
-    with open(str(path) + "_encrypted", "w") as output_file:
+    with open(after_path, "w") as output_file:
         output_file.write('\n'.join(str(number) for number in encoded_numbers))
 
 
 # For DH decryption, we will decrypt the ciphertext by subtracting the full key from each character's ASCII value. We will obtain a sequence of numbers
 # which we will then turn back to characters and write the result in a separate file
 # Path refers to the path of the encoded file
-def decrypt(path, pub_key1, priv_key1, pub_key2, priv_key2):
+def decrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
+    if not os.path.exists(after_path):
+        raise Exception("[DH] Simple file does not exist!")
+    os.remove(after_path)
     partial_key1, partial_key2 = generate_partial_keys(pub_key1, priv_key1, pub_key2, priv_key2)
     print("[DH DECRYPTION] The two partial keys are " + str(partial_key1) + " and " + str(partial_key2))
     full_key = generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2)
     print("[DH DECRYPTION] The full key is " + str(full_key))
     encoded_numbers = []
-    file = open(path, "r")
+    file = open(before_path, "r")
     for line in file:
         encoded_numbers.append(int(line.strip('\n')))
     ciphertext = ""
@@ -89,15 +91,5 @@ def decrypt(path, pub_key1, priv_key1, pub_key2, priv_key2):
         plaintext += x
     print("[DH DECRYPTION] Plaintext is \'" + plaintext + "\'")
 
-    with open(str(path)[:-10] + "_decrypted", "w") as output_file:
+    with open(after_path, "w") as output_file:
         output_file.write(plaintext)
-
-
-pb_key1, pr_key1, pb_key2, pr_key2 = compute_initial_prime_numbers()
-
-print("[DIFFIE-HELLMAN] Party 1 has the key pair (" + str(pb_key1) + ", " + str(
-    pr_key1) + "), while Party 2 has the key pair (" + str(pb_key2) + ", " + str(pr_key2) + ")")
-
-encrypt(EncryptionConstants.PATH, pb_key1, pr_key1, pb_key2, pr_key2)
-
-decrypt(str(EncryptionConstants.PATH) + "_encrypted", pb_key1, pr_key1, pb_key2, pr_key2)

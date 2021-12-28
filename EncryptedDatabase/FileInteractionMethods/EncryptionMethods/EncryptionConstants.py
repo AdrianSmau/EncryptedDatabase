@@ -8,8 +8,6 @@ LOWER_BOUND = 3
 RSA_UPPER_BOUND = int(2 ** RSA_KEY_SIZE / 2)
 DIFFIE_HELLMAN_UPPER_BOUND = int(2 ** DIFFIE_HELLMAN_KEY_SIZE / 2)
 
-PATH = "sample_text.txt"
-
 
 # This function computed the greatest common divisor between two numbers
 def gcd(a, b):

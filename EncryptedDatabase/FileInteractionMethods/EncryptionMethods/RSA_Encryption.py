@@ -1,6 +1,7 @@
+import os.path
 import random
 
-import EncryptionConstants
+from FileInteractionMethods.EncryptionMethods import EncryptionConstants
 
 
 # This function computes two large enough prime numbers (!!! that will need to be added to the database so that decryption can take place!!!)
@@ -45,11 +46,11 @@ def compute_d(e_value, t):
 # Thus, we will encrypt the plaintext by encrypting each character's ASCII value. We will obtain a sequence of numbers
 # which we will then turn back to characters and write the result in a separate file
 # Path refers to the path of the original file
-def encrypt(path, prime1, prime2):
+def encrypt(before_path, after_path, prime1, prime2):
     n_value, totient = compute_n_and_totient(prime1, prime2)
     public_exponent = compute_e(totient)
     print("[RSA ENCRYPTION] The public key is (" + str(public_exponent) + ", " + str(n_value) + ")")
-    file = open(path, "r")
+    file = open(before_path, "r")
     plaintext = file.read()
     print("[RSA ENCRYPTION] Plaintext is \'" + plaintext + "\'")
     ascii_characters = [ord(ch) for ch in plaintext]
@@ -59,7 +60,7 @@ def encrypt(path, prime1, prime2):
         ciphertext += str(x)
     print("[RSA ENCRYPTION] Ciphertext is \'" + ciphertext + "\'")
 
-    with open(str(path) + "_encrypted", "w") as output_file:
+    with open(after_path, "w") as output_file:
         output_file.write('\n'.join(str(number) for number in encoded_numbers))
 
 
@@ -67,13 +68,16 @@ def encrypt(path, prime1, prime2):
 # Thus, we will decrypt the ciphertext by decrypting each character's ASCII value. We will obtain a sequence of numbers
 # which we will then turn back to characters and write the result in a separate file
 # Path refers to the path of the encoded file
-def decrypt(path, prime1, prime2):
+def decrypt(before_path, after_path, prime1, prime2):
+    if not os.path.exists(after_path):
+        raise Exception("[RSA] Simple file does not exist!")
+    os.remove(after_path)
     n_value, totient = compute_n_and_totient(prime1, prime2)
     e = compute_e(totient)
     private_exponent = compute_d(e, totient)
     print("[RSA DECRYPTION] The private key is (" + str(private_exponent) + ", " + str(n_value) + ")")
     encoded_numbers = []
-    file = open(path, "r")
+    file = open(before_path, "r")
     for line in file:
         encoded_numbers.append(int(line.strip('\n')))
     ciphertext = ""
@@ -86,15 +90,5 @@ def decrypt(path, prime1, prime2):
         plaintext += x
     print("[RSA DECRYPTION] Plaintext is \'" + plaintext + "\'")
 
-    with open(str(path)[:-10] + "_decrypted", "w") as output_file:
+    with open(after_path, "w") as output_file:
         output_file.write(plaintext)
-
-
-# Let's test our RSA encryption algorithm implementation for a sample text file!
-prim1, prim2 = compute_initial_prime_numbers()
-
-print("[RSA] The two selected prime numbers are: " + str(prim1) + " and " + str(prim2))
-
-encrypt(EncryptionConstants.PATH, prim1, prim2)
-
-decrypt(str(EncryptionConstants.PATH) + "_encrypted", prim1, prim2)
