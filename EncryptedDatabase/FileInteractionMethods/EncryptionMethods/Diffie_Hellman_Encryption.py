@@ -1,6 +1,7 @@
 import os.path
 import random
 
+from FileInteractionMethods import ParsingMethods as PM
 from FileInteractionMethods.EncryptionMethods import EncryptionConstants
 
 
@@ -49,18 +50,19 @@ def generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2
 # Path refers to the path of the original file
 def encrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
     partial_key1, partial_key2 = generate_partial_keys(pub_key1, priv_key1, pub_key2, priv_key2)
-    print("[DH ENCRYPTION] The two partial keys are " + str(partial_key1) + " and " + str(partial_key2))
+    print(
+        f"{PM.ConsoleColors.INFO}[DH ENCRYPTION] The two partial keys are {str(partial_key1)} and {str(partial_key2)}{PM.ConsoleColors.ENDCHAR}")
     full_key = generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2)
-    print("[DH ENCRYPTION] The full key is " + str(full_key))
+    print(f"{PM.ConsoleColors.INFO}[DH ENCRYPTION] The full key is {str(full_key)}{PM.ConsoleColors.ENDCHAR}")
     file = open(before_path, "r")
     plaintext = file.read()
-    print("[DH ENCRYPTION] Plaintext is \'" + plaintext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[DH ENCRYPTION] Plaintext is '{plaintext}'{PM.ConsoleColors.ENDCHAR}")
     ascii_characters = [ord(ch) for ch in plaintext]
     encoded_numbers = [chval + full_key for chval in ascii_characters]
     ciphertext = ""
     for x in encoded_numbers:
         ciphertext += str(x)
-    print("[DH ENCRYPTION] Ciphertext is \'" + ciphertext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[DH ENCRYPTION] Ciphertext is '{ciphertext}'{PM.ConsoleColors.ENDCHAR}")
 
     with open(after_path, "w") as output_file:
         output_file.write('\n'.join(str(number) for number in encoded_numbers))
@@ -71,12 +73,14 @@ def encrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
 # Path refers to the path of the encoded file
 def decrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
     if not os.path.exists(after_path):
-        raise Exception("[DH] Simple file does not exist!")
+        print(f"{PM.ConsoleColors.ERROR}[DH] Simple file does not exist!{PM.ConsoleColors.ENDCHAR}")
+        return
     os.remove(after_path)
     partial_key1, partial_key2 = generate_partial_keys(pub_key1, priv_key1, pub_key2, priv_key2)
-    print("[DH DECRYPTION] The two partial keys are " + str(partial_key1) + " and " + str(partial_key2))
+    print(
+        f"{PM.ConsoleColors.INFO}[DH DECRYPTION] The two partial keys are {str(partial_key1)} and {str(partial_key2)}{PM.ConsoleColors.ENDCHAR}")
     full_key = generate_full_key(priv_key1, partial_key1, pub_key2, priv_key2, partial_key2)
-    print("[DH DECRYPTION] The full key is " + str(full_key))
+    print(f"{PM.ConsoleColors.INFO}[DH DECRYPTION] The full key is {str(full_key)}{PM.ConsoleColors.ENDCHAR}")
     encoded_numbers = []
     file = open(before_path, "r")
     for line in file:
@@ -84,12 +88,12 @@ def decrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
     ciphertext = ""
     for x in encoded_numbers:
         ciphertext += str(x)
-    print("[DH DECRYPTION] Ciphertext is \'" + ciphertext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[DH DECRYPTION] Ciphertext is '{ciphertext}'{PM.ConsoleColors.ENDCHAR}")
     decoded_characters = [chr(chval - full_key) for chval in encoded_numbers]
     plaintext = ""
     for x in decoded_characters:
         plaintext += x
-    print("[DH DECRYPTION] Plaintext is \'" + plaintext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[DH DECRYPTION] Plaintext is '{plaintext}'{PM.ConsoleColors.ENDCHAR}")
 
     with open(after_path, "w") as output_file:
         output_file.write(plaintext)

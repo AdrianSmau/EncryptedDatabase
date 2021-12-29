@@ -1,6 +1,7 @@
 import os.path
 import random
 
+import FileInteractionMethods.ParsingMethods as PM
 from FileInteractionMethods.EncryptionMethods import EncryptionConstants
 
 
@@ -49,16 +50,17 @@ def compute_d(e_value, t):
 def encrypt(before_path, after_path, prime1, prime2):
     n_value, totient = compute_n_and_totient(prime1, prime2)
     public_exponent = compute_e(totient)
-    print("[RSA ENCRYPTION] The public key is (" + str(public_exponent) + ", " + str(n_value) + ")")
+    print(
+        f"{PM.ConsoleColors.INFO}[RSA ENCRYPTION] The public key is ({str(public_exponent)},{str(n_value)}){PM.ConsoleColors.ENDCHAR}")
     file = open(before_path, "r")
     plaintext = file.read()
-    print("[RSA ENCRYPTION] Plaintext is \'" + plaintext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[RSA ENCRYPTION] Plaintext is '{plaintext}'{PM.ConsoleColors.ENDCHAR}")
     ascii_characters = [ord(ch) for ch in plaintext]
     encoded_numbers = [((chval ** public_exponent) % n_value) for chval in ascii_characters]
     ciphertext = ""
     for x in encoded_numbers:
         ciphertext += str(x)
-    print("[RSA ENCRYPTION] Ciphertext is \'" + ciphertext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[RSA ENCRYPTION] Ciphertext is '{ciphertext}'{PM.ConsoleColors.ENDCHAR}")
 
     with open(after_path, "w") as output_file:
         output_file.write('\n'.join(str(number) for number in encoded_numbers))
@@ -70,12 +72,14 @@ def encrypt(before_path, after_path, prime1, prime2):
 # Path refers to the path of the encoded file
 def decrypt(before_path, after_path, prime1, prime2):
     if not os.path.exists(after_path):
-        raise Exception("[RSA] Simple file does not exist!")
+        print(f"{PM.ConsoleColors.ERROR}[RSA] Simple file does not exist!{PM.ConsoleColors.ENDCHAR}")
+        return
     os.remove(after_path)
     n_value, totient = compute_n_and_totient(prime1, prime2)
     e = compute_e(totient)
     private_exponent = compute_d(e, totient)
-    print("[RSA DECRYPTION] The private key is (" + str(private_exponent) + ", " + str(n_value) + ")")
+    print(
+        f"{PM.ConsoleColors.INFO}[RSA DECRYPTION] The private key is ({str(private_exponent)},{str(n_value)}){PM.ConsoleColors.ENDCHAR}")
     encoded_numbers = []
     file = open(before_path, "r")
     for line in file:
@@ -83,12 +87,12 @@ def decrypt(before_path, after_path, prime1, prime2):
     ciphertext = ""
     for x in encoded_numbers:
         ciphertext += str(x)
-    print("[RSA DECRYPTION] Ciphertext is \'" + ciphertext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[RSA DECRYPTION] Ciphertext is '{ciphertext}'{PM.ConsoleColors.ENDCHAR}")
     decoded_characters = [chr((chval ** private_exponent) % n_value) for chval in encoded_numbers]
     plaintext = ""
     for x in decoded_characters:
         plaintext += x
-    print("[RSA DECRYPTION] Plaintext is \'" + plaintext + "\'")
+    print(f"{PM.ConsoleColors.INFO}[RSA DECRYPTION] Plaintext is '{plaintext}'{PM.ConsoleColors.ENDCHAR}")
 
     with open(after_path, "w") as output_file:
         output_file.write(plaintext)

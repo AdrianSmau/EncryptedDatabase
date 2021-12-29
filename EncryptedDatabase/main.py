@@ -1,2 +1,3 @@
-print("RSA Encryption completed!")
-print("DH Encryption completed!")
+import CommandLine.CL_Functions as CL
+
+CL.start()

@@ -1,18 +1,26 @@
 import os
+import shutil
 import sqlite3
-import time
 from datetime import datetime
 
 from FileInteractionMethods import ParsingMethods as PM
 from FileInteractionMethods.EncryptionMethods import Diffie_Hellman_Encryption as DH
 from FileInteractionMethods.EncryptionMethods import RSA_Encryption as RSA
 
-DATABASE_PATH = 'files_database.db'
+DATABASE_PATH = 'Database/files_database.db'
 
 
 # Initialize database in order to store the appropriate file information
 def initialize_database():
-    print("[SYSTEM] Database creation started...")
+    print(f"{PM.ConsoleColors.INFO}[SYSTEM] Wiping the Encrypted folder clean...{PM.ConsoleColors.ENDCHAR}")
+    for file in os.listdir(PM.ENCRYPTED_FILES_PATH):
+        file_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file)
+        try:
+            os.unlink(file_path)
+        except Exception as err:
+            print("Failed to delete file %s : %s" % (file_path, err))
+    print(f"{PM.ConsoleColors.SUCCESS}[SYSTEM] Encrypted folder cleared...{PM.ConsoleColors.ENDCHAR}")
+    print(f"{PM.ConsoleColors.INFO}[DATABASE] Database creation started...{PM.ConsoleColors.ENDCHAR}")
     init_conn = sqlite3.connect(DATABASE_PATH)
     try:
         c = init_conn.cursor()
@@ -30,10 +38,10 @@ def initialize_database():
                 last_modification TIMESTAMP,
                 creation_time TIMESTAMP)""")
         init_conn.commit()
-        init_conn.close()
-        print("[SYSTEM] Database creation completed!")
+        c.close()
+        print(f"{PM.ConsoleColors.SUCCESS}[DATABASE] Database creation completed!{PM.ConsoleColors.ENDCHAR}")
     except sqlite3.Error as err:
-        print("[SYSTEM] Failed to create SqLite table", err)
+        print("[DATABASE] Failed to create SqLite table", err)
     finally:
         if init_conn:
             init_conn.close()
@@ -54,7 +62,7 @@ def is_in_database(file_name):
             is_found = True
         c.close()
     except sqlite3.Error as err:
-        print("[SYSTEM] Failed to check from SqLite table", err)
+        print("[DATABASE] Failed to check from SqLite table", err)
     finally:
         if check_conn:
             check_conn.close()
@@ -66,7 +74,8 @@ def add_with_RSA(file_name):
     before_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
     after_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")
     param1, param2 = RSA.compute_initial_prime_numbers()
-    print("[RSA] The two selected prime numbers are: " + str(param1) + " and " + str(param2))
+    print(
+        f"{PM.ConsoleColors.INFO}[RSA] The two selected prime numbers are: {str(param1)} and {str(param2)} {PM.ConsoleColors.ENDCHAR}")
     RSA.encrypt(before_path, after_path, param1, param2)
     size, atime, mtime, ctime = PM.extract_file_metadata(before_path)
     add_conn = sqlite3.connect(DATABASE_PATH)
@@ -76,10 +85,11 @@ def add_with_RSA(file_name):
         param_touple = (file_name, "RSA", param1, param2, size, atime, mtime, ctime)
         c.execute(add_command, param_touple)
         add_conn.commit()
-        print("[SYSTEM] File " + file_name + " added to DataBase using RSA Encryption!")
         c.close()
+        print(
+            f"{PM.ConsoleColors.SUCCESS}[DATABASE] File '{file_name}' added to DataBase using RSA Encryption!{PM.ConsoleColors.ENDCHAR}")
     except sqlite3.Error as err:
-        print("[SYSTEM] Failed to add into SqLite table", err)
+        print("[DATABASE] Failed to add into SqLite table", err)
     finally:
         if add_conn:
             add_conn.close()
@@ -91,8 +101,8 @@ def add_with_DH(file_name):
     after_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")
     pb_key1, pr_key1, pb_key2, pr_key2 = DH.compute_initial_prime_numbers()
 
-    print("[DIFFIE-HELLMAN] Party 1 has the key pair (" + str(pb_key1) + ", " + str(
-        pr_key1) + "), while Party 2 has the key pair (" + str(pb_key2) + ", " + str(pr_key2) + ")")
+    print(
+        f"{PM.ConsoleColors.INFO}[DIFFIE-HELLMAN] Party 1 has the key pair ({str(pb_key1)},{str(pr_key1)}), while Party 2 has the key pair ({str(pb_key2)},{str(pr_key2)}){PM.ConsoleColors.ENDCHAR}")
 
     DH.encrypt(before_path, after_path, pb_key1, pr_key1, pb_key2, pr_key2)
     size, atime, mtime, ctime = PM.extract_file_metadata(before_path)
@@ -103,27 +113,45 @@ def add_with_DH(file_name):
         param_touple = (file_name, "DH", pb_key1, pr_key1, pb_key2, pr_key2, size, atime, mtime, ctime)
         c.execute(add_command, param_touple)
         add_conn.commit()
-        print("[SYSTEM] File " + file_name + " added to DataBase using Diffie-Hellman Encryption!")
         c.close()
+        print(
+            f"{PM.ConsoleColors.SUCCESS}[DATABASE] File '{file_name}' added to DataBase using Diffie-Hellman Encryption!{PM.ConsoleColors.ENDCHAR}")
     except sqlite3.Error as err:
-        print("[SYSTEM] Failed to add into SqLite table", err)
+        print("[DATABASE] Failed to add into SqLite table", err)
     finally:
         if add_conn:
             add_conn.close()
 
 
 # The method the user will interact with the database. Specifying the file name and the algorithm, we will encrypt the file with the chosen algorithm and add the file metadata to the database
-# This method is secured and if something is wrong, an exception will be raised
-def add_to_database(file_name, encryption_alg):
-    if is_in_database(file_name):
-        raise Exception("[SYSTEM] File " + file_name + " is already in DataBase!")
-    PM.verify_file(file_name, True)
-    if encryption_alg == "RSA":
-        add_with_RSA(file_name)
-    elif encryption_alg == "DH":
-        add_with_DH(file_name)
+# This method is secured and if something is wrong, an exception will be logged
+def add_to_database(file_path, encryption_alg):
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        print(f"{PM.ConsoleColors.ERROR}[SYSTEM] Given path is not a valid one!{PM.ConsoleColors.ENDCHAR}")
+        return
+    file_name = os.path.basename(file_path)
+    simple_files_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
+    if simple_files_path != file_path:
+        if os.path.exists(os.path.join(PM.SIMPLE_FILES_PATH, file_name)):
+            print(
+                f"{PM.ConsoleColors.WARNING}[SYSTEM] A file with the name '{file_name}' already exists in the Files folder! Overriding!...{PM.ConsoleColors.ENDCHAR}")
+            os.remove(simple_files_path)
+        shutil.copy2(file_path, os.path.abspath(PM.SIMPLE_FILES_PATH))
+        print(
+            f"{PM.ConsoleColors.INFO}[SYSTEM] File '{file_name}' copied to Files folder at '{simple_files_path}'{PM.ConsoleColors.ENDCHAR}")
     else:
-        raise Exception("[SYSTEM] Unrecognized encryption algorithm!")
+        print(
+            f"{PM.ConsoleColors.INFO}[SYSTEM] File '{file_name}' chosen from the Files folder!{PM.ConsoleColors.ENDCHAR}")
+    if is_in_database(file_name):
+        print(
+            f"{PM.ConsoleColors.ERROR}[DATABASE] File '{file_name}' is already in DataBase!{PM.ConsoleColors.ENDCHAR}")
+        return
+    if not PM.verify_file(file_name, True):
+        return
+    if encryption_alg == "rsa":
+        add_with_RSA(file_name)
+    else:
+        add_with_DH(file_name)
 
 
 # We decrypt a file encrypted with RSA and we open the decrypted file, after overriding the original file in the appropriate folder
@@ -131,7 +159,7 @@ def read_with_RSA(file_name, encrypted_file_name, param1, param2):
     before_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
     after_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
     RSA.decrypt(before_path, after_path, param1, param2)
-    os.startfile(after_path)
+    os.startfile(os.path.abspath(after_path))
 
 
 # We decrypt a file encrypted with Diffie-Hellman and we open the decrypted file, after overriding the original file in the appropriate folder
@@ -139,17 +167,21 @@ def read_with_DH(file_name, encrypted_file_name, param1, param2, param3, param4)
     before_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
     after_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
     DH.decrypt(before_path, after_path, param1, param2, param3, param4)
-    os.startfile(after_path)
+    os.startfile(os.path.abspath(after_path))
 
 
-# The method the users will interact with the DataBase. Being a secured method, it will raise an Exception if something is wrong. We receive the original file name, and we fetch
+# The method the users will interact with the DataBase. Being a secured method, it will log an Exception if something is wrong. We receive the original file name, and we fetch
 # the metadata from the database, display it, decrypt the file, store it in the appropriate folder and open the file
 def read_from_database(file_name):
     if not is_in_database(file_name):
-        raise Exception("[SYSTEM] File " + file_name + " is not in DataBase!")
-    PM.verify_file(file_name, True)
+        print(
+            f"{PM.ConsoleColors.ERROR}[DATABASE] Error when attempting to read : File '{file_name}' is not in DataBase!{PM.ConsoleColors.ENDCHAR}")
+        return
+    if not PM.verify_file(file_name, True):
+        return
     encrypted_file_name = file_name[:-4] + "_encrypted.txt"
-    PM.verify_file(encrypted_file_name, False)
+    if not PM.verify_file(encrypted_file_name, False):
+        return
     encryption_algorithm = ""
     metadata = ()
     rsa_params = ()
@@ -164,26 +196,51 @@ def read_from_database(file_name):
         rsa_params = (data[3], data[4])
         dh_params = (data[3], data[4], data[5], data[6])
         metadata = (data[1], data[7], data[8], data[9], data[10])
+        c.close()
     except sqlite3.Error as err:
-        print("[SYSTEM] Failed to read from SqLite table", err)
+        print("[DATABASE] Failed to read from SqLite table", err)
     finally:
         if check_conn:
             check_conn.close()
         print(
-            "[SYSTEM] File Metadata:\nName: " + metadata[0] + "\nSize: " + str(
-                metadata[1]) + " byte(s)\nLast access at: " +
-            datetime.fromtimestamp(metadata[2]).strftime('%d-%m-%Y') + "\nLast modification at: " +
-            datetime.fromtimestamp(metadata[3]).strftime('%d-%m-%Y') + "\nCreated at: " +
-            datetime.fromtimestamp(metadata[4]).strftime('%d-%m-%Y'))
+            f"{PM.ConsoleColors.METADATA}[SYSTEM] File Metadata:\nName: {metadata[0]}\nSize: {str(metadata[1])} byte(s)\nLast access at: {datetime.fromtimestamp(metadata[2]).strftime('%d-%m-%Y')}\nLast modification at: {datetime.fromtimestamp(metadata[3]).strftime('%d-%m-%Y')}\nCreated at: {datetime.fromtimestamp(metadata[4]).strftime('%d-%m-%Y')}{PM.ConsoleColors.ENDCHAR}")
         if encryption_algorithm == "RSA":
             read_with_RSA(file_name, encrypted_file_name, rsa_params[0], rsa_params[1])
         elif encryption_algorithm == "DH":
             read_with_DH(file_name, encrypted_file_name, dh_params[0], dh_params[1], dh_params[2], dh_params[3])
         else:
-            raise Exception("[SYSTEM] Error when trying to read file - Invalid encryption algorithm!")
+            print(
+                f"{PM.ConsoleColors.ERROR}[SYSTEM] Error when trying to read file - Invalid encryption algorithm!{PM.ConsoleColors.ENDCHAR}")
+            return
+
+        # Deletes file from Database, as well as from the application 'cache', from the Files folder, the encrypted and decrypted versions as well
 
 
-initialize_database()
-add_to_database("sample_text.txt", "RSA")
-time.sleep(2)
-read_from_database("sample_text.txt")
+def delete_from_database(file_name):
+    if not is_in_database(file_name):
+        print(
+            f"{PM.ConsoleColors.ERROR}[SYSTEM] Error when attempting to delete :  File '{file_name}' is not in DataBase!{PM.ConsoleColors.ENDCHAR}")
+        return
+    if not PM.verify_file(file_name, True):
+        return
+    encrypted_file_name = file_name[:-4] + "_encrypted.txt"
+    if not PM.verify_file(encrypted_file_name, False):
+        return
+    delete_conn = sqlite3.connect(DATABASE_PATH)
+    try:
+        c = delete_conn.cursor()
+        delete_command = """DELETE FROM files WHERE name = (?)"""
+        c.execute(delete_command, (file_name,))
+        delete_conn.commit()
+        c.close()
+    except sqlite3.Error as err:
+        print("[DATABASE] Failed to delete from SqLite table", err)
+    finally:
+        if delete_conn:
+            delete_conn.close()
+        print(
+            f"{PM.ConsoleColors.SUCCESS}[DATABASE] Deleted file '{file_name}' from Database!{PM.ConsoleColors.ENDCHAR}")
+        encrypted_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
+        os.remove(encrypted_path)
+        print(
+            f"{PM.ConsoleColors.SUCCESS}[SYSTEM] Removed file from encrypted files folder at {encrypted_path}{PM.ConsoleColors.ENDCHAR}")

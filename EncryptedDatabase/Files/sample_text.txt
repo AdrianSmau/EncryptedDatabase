@@ -1,1 +1,2 @@
-This is a sample text file. We are going to encrypt, as well as decrypt this file using different methods.
+This is a sample text file which we are going to test our application on.
+We are going to encrypt, decrypt, add to the database and do a lot more with this file!
