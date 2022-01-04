@@ -1,1 +1,3 @@
-# This package is responsible with the encryption and decryption methods
+"""
+This package is responsible with the encryption and decryption methods
+"""

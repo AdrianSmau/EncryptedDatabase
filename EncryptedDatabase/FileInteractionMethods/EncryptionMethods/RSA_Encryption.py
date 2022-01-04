@@ -5,10 +5,12 @@ import FileInteractionMethods.ParsingMethods as PM
 from FileInteractionMethods.EncryptionMethods import EncryptionConstants
 
 
-# This function computes two large enough prime numbers (!!! that will need to be added to the database so that decryption can take place!!!)
-# such that n (the RSA modulus) does not exceed 2^KEY_SIZE
-# I chose RSA_KEY_SIZE = 16, since if it was chosen above 24, the algorithm would lose efficiency
 def compute_initial_prime_numbers():
+    """
+    This function computes two large enough prime numbers such that n (the RSA modulus) does not exceed 2^KEY_SIZE.
+    I chose RSA_KEY_SIZE = 16, since if it was chosen above 24, the algorithm would lose efficiency.
+    :return: The two chosen prime numbers
+    """
     primes_in_range = EncryptionConstants.generate_primes(EncryptionConstants.LOWER_BOUND,
                                                           EncryptionConstants.RSA_UPPER_BOUND)
     p1 = 0
@@ -19,13 +21,22 @@ def compute_initial_prime_numbers():
     return p1, p2
 
 
-# This function computes the RSA modulus value and the Euler's totient function value
 def compute_n_and_totient(p1, p2):
+    """
+    This function computes the RSA modulus value and the Euler's totient function value
+    :param p1: The first prime number chosen (stored in Database)
+    :param p2: The second prime number chosen (stored in Database)
+    :return: A touple of n, respectively the totient
+    """
     return p1 * p2, (p1 - 1) * (p2 - 1)
 
 
-# This function computed the e value, which is a part of the public key
 def compute_e(t):
+    """
+    This function computed the e value, which is a part of the public key
+    :param t: The totient resulted from the above function
+    :return: The e value, part of the public key
+    """
     public_exponent = 0
     # I chose to proceed this way since it is more efficient to have a small e instead of a large one
     for e_value in range(3, t - 1):
@@ -35,19 +46,29 @@ def compute_e(t):
     return public_exponent
 
 
-# This function computed the d value, which is a part of the private key
 def compute_d(e_value, t):
+    """
+    This function computed the d value, which is a part of the private key
+    :param e_value: The e value, computed using the above method
+    :param t: The totient resulted from the two prime numbers
+    :return: The d value, part of the prrivate key
+    """
     gcd_value, x, y = EncryptionConstants.extended_gcd(e_value, t)
     if gcd_value != 1:
         raise ValueError("Something went wrong with the e value computation!")
     return x % t
 
 
-# RSA encryption is ((message)**e) mod n
-# Thus, we will encrypt the plaintext by encrypting each character's ASCII value. We will obtain a sequence of numbers
-# which we will then turn back to characters and write the result in a separate file
-# Path refers to the path of the original file
 def encrypt(before_path, after_path, prime1, prime2):
+    """
+    RSA encryption is ((message)**e) mod n.
+    Thus, we will encrypt the plaintext by encrypting each character's ASCII value.
+    We will obtain a sequence of numbers which we will then turn back to characters and write the result in a separate file.
+    :param before_path: Path of the original file, the cached version from the Files/ folder
+    :param after_path: Path of the encrypted file, from the Files/Encrypted/ folder, where we will store the encrypted version of the file - with '_encrypted' added to the end of the original file name
+    :param prime1: The first prime number generated (stored in the Database)
+    :param prime2: The second prime number generated (stored in the Database)
+    """
     n_value, totient = compute_n_and_totient(prime1, prime2)
     public_exponent = compute_e(totient)
     print(
@@ -66,11 +87,15 @@ def encrypt(before_path, after_path, prime1, prime2):
         output_file.write('\n'.join(str(number) for number in encoded_numbers))
 
 
-# RSA decryption is ((cipher_message)**d) mod n
-# Thus, we will decrypt the ciphertext by decrypting each character's ASCII value. We will obtain a sequence of numbers
-# which we will then turn back to characters and write the result in a separate file
-# Path refers to the path of the encoded file
 def decrypt(before_path, after_path, prime1, prime2):
+    """
+    RSA decryption is ((cipher_message)**d) mod n.
+    Thus, we will decrypt the ciphertext by decrypting each character's ASCII value. We will obtain a sequence of numbers which we will then turn back to characters and write the result in a separate file.
+    :param before_path: Path of the encrypted file, from the Files/Encrypted/ folder, where we have stored the encrypted version of the file - with '_encrypted' added to the end of the original file name
+    :param after_path: Path of the decrypted file, which will overwrite the cached version from the Files/ folder
+    :param prime1: The first prime number generated (stored in the Database)
+    :param prime2: The second prime number generated (stored in the Database)
+    """
     if not os.path.exists(after_path):
         print(f"{PM.ConsoleColors.ERROR}[RSA] Simple file does not exist!{PM.ConsoleColors.ENDCHAR}")
         return

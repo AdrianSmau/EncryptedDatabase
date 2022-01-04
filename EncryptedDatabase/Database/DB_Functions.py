@@ -10,11 +10,14 @@ from FileInteractionMethods.EncryptionMethods import RSA_Encryption as RSA
 DATABASE_PATH = 'Database/files_database.db'
 
 
-# Initialize database in order to store the appropriate file information
 def initialize_database():
+    """
+    Initialize database in order to store the appropriate file information.
+    This function deleted all the files from the Files/Encrypted folder, while also wiping the Database clean of any record.
+    """
     print(f"{PM.ConsoleColors.INFO}[SYSTEM] Wiping the Encrypted folder clean...{PM.ConsoleColors.ENDCHAR}")
     for file in os.listdir(PM.ENCRYPTED_FILES_PATH):
-        file_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file)
+        file_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, file)).replace("\\", "/")
         try:
             os.unlink(file_path)
         except Exception as err:
@@ -47,8 +50,12 @@ def initialize_database():
             init_conn.close()
 
 
-# Checks if a file is in the DataBase. Returns True if it is, False otherwise
 def is_in_database(file_name):
+    """
+    Checks if a file with the given name already exists in the Database.
+    :param file_name: The name of the file to be searched
+    :return: True if any files exist, False otherwise
+    """
     is_found = False
     check_conn = sqlite3.connect(DATABASE_PATH)
     try:
@@ -69,10 +76,13 @@ def is_in_database(file_name):
     return is_found
 
 
-# Inserting the metadata of the specified file into the DataBase, while also encrypting the file with RSA and storing it in the appropriate folder
 def add_with_RSA(file_name):
-    before_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
-    after_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")
+    """
+    Inserts the metadata of the specified file into the DataBase, while also encrypting the file with RSA and storing it in the Files/Encrypted folder (in encrypted form).
+    :param file_name: The name of the file to be encrypted with RSA and stored in the Database
+    """
+    before_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
+    after_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")).replace("\\", "/")
     param1, param2 = RSA.compute_initial_prime_numbers()
     print(
         f"{PM.ConsoleColors.INFO}[RSA] The two selected prime numbers are: {str(param1)} and {str(param2)} {PM.ConsoleColors.ENDCHAR}")
@@ -95,10 +105,13 @@ def add_with_RSA(file_name):
             add_conn.close()
 
 
-# Inserting the metadata of the specified file into the DataBase, while also encrypting the file with Diffie-Hellman and storing it in the appropriate folder
 def add_with_DH(file_name):
-    before_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
-    after_path = os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")
+    """
+    Inserts the metadata of the specified file into the DataBase, while also encrypting the file with Diffie-Hellman and storing it in the Files/Encrypted folder (in encrypted form).
+    :param file_name: The name of the file to be encrypted with Diffie-Hellman and stored in the Database
+    """
+    before_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
+    after_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, file_name[:-4] + "_encrypted.txt")).replace("\\", "/")
     pb_key1, pr_key1, pb_key2, pr_key2 = DH.compute_initial_prime_numbers()
 
     print(
@@ -123,20 +136,26 @@ def add_with_DH(file_name):
             add_conn.close()
 
 
-# The method the user will interact with the database. Specifying the file name and the algorithm, we will encrypt the file with the chosen algorithm and add the file metadata to the database
-# This method is secured and if something is wrong, an exception will be logged
 def add_to_database(file_path, encryption_alg):
+    """
+    The method the user will interact with the database. Specifying the file name and the algorithm, we will encrypt the file with the chosen algorithm and add the file metadata to the Database.
+    This method is secured and if something is wrong, an exception will be logged.
+    Once all the validation have been made, based on the chosen Encryption Algorithm, the right method will be chosen in order to encrypt the file and store the appropriate information.
+    :param file_path: In the Command Line, a dialog box will be opened so that the user can interactively select the file he wants to encrypt. Then, this function 'caches' a copy of that file in the Files/ folder,
+    or does nothing, if the file is selected from the Files/ folder
+    :param encryption_alg: Represents the chosen Encryption Algorithm (RSA or Diffie-Hellman) that will be used for encrypting/decrypting the file. Is RSA by default.
+    """
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
         print(f"{PM.ConsoleColors.ERROR}[SYSTEM] Given path is not a valid one!{PM.ConsoleColors.ENDCHAR}")
         return
     file_name = os.path.basename(file_path)
-    simple_files_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
+    simple_files_path = (os.path.abspath(os.path.join(PM.SIMPLE_FILES_PATH, file_name))).replace("\\", "/")
     if simple_files_path != file_path:
-        if os.path.exists(os.path.join(PM.SIMPLE_FILES_PATH, file_name)):
+        if os.path.exists((os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")):
             print(
                 f"{PM.ConsoleColors.WARNING}[SYSTEM] A file with the name '{file_name}' already exists in the Files folder! Overriding!...{PM.ConsoleColors.ENDCHAR}")
             os.remove(simple_files_path)
-        shutil.copy2(file_path, os.path.abspath(PM.SIMPLE_FILES_PATH))
+        shutil.copy2(file_path, (os.path.abspath(PM.SIMPLE_FILES_PATH)).replace("\\", "/"))
         print(
             f"{PM.ConsoleColors.INFO}[SYSTEM] File '{file_name}' copied to Files folder at '{simple_files_path}'{PM.ConsoleColors.ENDCHAR}")
     else:
@@ -154,25 +173,47 @@ def add_to_database(file_path, encryption_alg):
         add_with_DH(file_name)
 
 
-# We decrypt a file encrypted with RSA and we open the decrypted file, after overriding the original file in the appropriate folder
 def read_with_RSA(file_name, encrypted_file_name, param1, param2):
-    before_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
-    after_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
+    """
+    Decrypts a file encrypted with RSA and opens the decrypted file, after overriding the original file in the Files/ folder
+    :param file_name: The name of the original file
+    :param encrypted_file_name: The name of the encrypted file (that is the original name, with an appended _encrypted at the end) - example => test.txt, test_encrypted.txt
+    :param param1: The first prime number needed to compute the RSA algorithm decryption
+    :param param2: The second prime number needed to compute the RSA algorithm decryption
+    Starts the file from the Files/ folder, after overwriting it with the decrypted version (that should be identical)
+    """
+    before_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)).replace("\\", "/")
+    after_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
     RSA.decrypt(before_path, after_path, param1, param2)
-    os.startfile(os.path.abspath(after_path))
+    os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
 
 
-# We decrypt a file encrypted with Diffie-Hellman and we open the decrypted file, after overriding the original file in the appropriate folder
 def read_with_DH(file_name, encrypted_file_name, param1, param2, param3, param4):
-    before_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
-    after_path = os.path.join(PM.SIMPLE_FILES_PATH, file_name)
+    """
+    Decrypts a file encrypted with Diffie-Hellman and opens the decrypted file, after overriding the original file in the Files/ folder
+    :param file_name: The name of the original file
+    :param encrypted_file_name: The name of the encrypted file (that is the original name, with an appended _encrypted at the end) - example => test.txt, test_encrypted.txt
+    :param param1: The first prime number needed to compute the Diffie-Hellman algorithm decryption
+    :param param2: The second prime number needed to compute the Diffie-Hellman algorithm decryption
+    :param param3: The third prime number needed to compute the Diffie-Hellman algorithm decryption
+    :param param4: The fourth prime number needed to compute the Diffie-Hellman algorithm decryption
+    Starts the file from the Files/ folder, after overwriting it with the decrypted version (that should be identical)
+    """
+    before_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)).replace("\\", "/")
+    after_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
     DH.decrypt(before_path, after_path, param1, param2, param3, param4)
-    os.startfile(os.path.abspath(after_path))
+    os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
 
 
 # The method the users will interact with the DataBase. Being a secured method, it will log an Exception if something is wrong. We receive the original file name, and we fetch
 # the metadata from the database, display it, decrypt the file, store it in the appropriate folder and open the file
 def read_from_database(file_name):
+    """
+    The method the users will interact with the DataBase. Being a secured method, it will log an Exception if something is wrong.
+    We receive the original file name, and we fetch the metadata from the database, display it, decrypt the file, store it in the Files/ folder (thus overwriting the original file, which should be identical) and open the file
+    :param file_name: The name of the file that the user wants to read
+    Based on the encryption method used for the chosen file, we call the appropriate method from the two above.
+    """
     if not is_in_database(file_name):
         print(
             f"{PM.ConsoleColors.ERROR}[DATABASE] Error when attempting to read : File '{file_name}' is not in DataBase!{PM.ConsoleColors.ENDCHAR}")
@@ -213,10 +254,13 @@ def read_from_database(file_name):
                 f"{PM.ConsoleColors.ERROR}[SYSTEM] Error when trying to read file - Invalid encryption algorithm!{PM.ConsoleColors.ENDCHAR}")
             return
 
-        # Deletes file from Database, as well as from the application 'cache', from the Files folder, the encrypted and decrypted versions as well
-
 
 def delete_from_database(file_name):
+    """
+    The method the users will interact with the DataBase. Being a secured method, it will log an Exception if something is wrong.
+    Deletes file from Database, as well as its encrypted version from the Files/Encrypted folder. That means the 'cached', decrypted version remains in the Files/ folder, in case it is needed.
+    :param file_name: The name of the file that the user wants to delete
+    """
     if not is_in_database(file_name):
         print(
             f"{PM.ConsoleColors.ERROR}[SYSTEM] Error when attempting to delete :  File '{file_name}' is not in DataBase!{PM.ConsoleColors.ENDCHAR}")
@@ -240,7 +284,7 @@ def delete_from_database(file_name):
             delete_conn.close()
         print(
             f"{PM.ConsoleColors.SUCCESS}[DATABASE] Deleted file '{file_name}' from Database!{PM.ConsoleColors.ENDCHAR}")
-        encrypted_path = os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)
+        encrypted_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)).replace("\\", "/")
         os.remove(encrypted_path)
         print(
             f"{PM.ConsoleColors.SUCCESS}[SYSTEM] Removed file from encrypted files folder at {encrypted_path}{PM.ConsoleColors.ENDCHAR}")

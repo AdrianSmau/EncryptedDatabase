@@ -5,8 +5,14 @@ from Database import DB_Functions as DB
 from FileInteractionMethods import ParsingMethods as PM
 
 
-# Runs the command line and parses the commands, receiving parameters where it makes sense
 def start():
+    """
+    Runs the command line and parses the commands, receiving parameters where it makes sense.
+    Until the 'quit' command is typed or the program is terminated by force, the loop will continue to receive feedback from the user.
+    The Command Line begins by wiping the database clean (along with the Encrypted folder), however this can be skipped.
+    The 'help' command will give more information about syntax.
+    """
+    # Comment if no initialization is wanted
     DB.initialize_database()
     print(
         f"{PM.ConsoleColors.INFO}[COMMAND LINE] Welcome to EncryptedDatabase! Type 'help' for further information!{PM.ConsoleColors.ENDCHAR}")
