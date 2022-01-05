@@ -149,6 +149,10 @@ def add_to_database(file_path, encryption_alg):
         print(f"{PM.ConsoleColors.ERROR}[SYSTEM] Given path is not a valid one!{PM.ConsoleColors.ENDCHAR}")
         return
     file_name = os.path.basename(file_path)
+    if is_in_database(file_name):
+        print(
+            f"{PM.ConsoleColors.ERROR}[SYSTEM] Error when attempting to add :  File '{file_name}' is already in DataBase!{PM.ConsoleColors.ENDCHAR}")
+        return
     simple_files_path = (os.path.abspath(os.path.join(PM.SIMPLE_FILES_PATH, file_name))).replace("\\", "/")
     if simple_files_path != file_path:
         if os.path.exists((os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")):
@@ -161,10 +165,6 @@ def add_to_database(file_path, encryption_alg):
     else:
         print(
             f"{PM.ConsoleColors.INFO}[SYSTEM] File '{file_name}' chosen from the Files folder!{PM.ConsoleColors.ENDCHAR}")
-    if is_in_database(file_name):
-        print(
-            f"{PM.ConsoleColors.ERROR}[DATABASE] File '{file_name}' is already in DataBase!{PM.ConsoleColors.ENDCHAR}")
-        return
     if not PM.verify_file(file_name, True):
         return
     if encryption_alg == "rsa":
