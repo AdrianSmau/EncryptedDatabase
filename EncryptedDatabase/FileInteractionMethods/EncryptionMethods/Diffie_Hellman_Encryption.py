@@ -101,11 +101,16 @@ def decrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
     :param priv_key1: Private key of the first party (stored in Database)
     :param pub_key2: Public key of the second party (stored in Database)
     :param priv_key2: Private key of the second party (stored in Database)
+    :returns: True if the decryption went good, False otherwise
     """
+    if not os.path.exists(before_path):
+        print(f"{PM.ConsoleColors.ERROR}[DH] Encrypted file does not exist!{PM.ConsoleColors.ENDCHAR}")
+        return False
     if not os.path.exists(after_path):
-        print(f"{PM.ConsoleColors.ERROR}[DH] Simple file does not exist!{PM.ConsoleColors.ENDCHAR}")
-        return
-    os.remove(after_path)
+        print(
+            f"{PM.ConsoleColors.WARNING}[DH] The file was deleted from the cache folder! It will now be restored!{PM.ConsoleColors.ENDCHAR}")
+    else:
+        os.remove(after_path)
     partial_key1, partial_key2 = generate_partial_keys(pub_key1, priv_key1, pub_key2, priv_key2)
     print(
         f"{PM.ConsoleColors.INFO}[DH DECRYPTION] The two partial keys are {str(partial_key1)} and {str(partial_key2)}{PM.ConsoleColors.ENDCHAR}")
@@ -127,3 +132,5 @@ def decrypt(before_path, after_path, pub_key1, priv_key1, pub_key2, priv_key2):
 
     with open(after_path, "w") as output_file:
         output_file.write(plaintext)
+
+    return True

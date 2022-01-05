@@ -19,3 +19,4 @@ continutul decriptat<br>
 <li>[29.12.2021] - Implemented secure delete interaction with the Database, a user-friendly colorful logging method and also a command line parser!</li>
 <li>[04.01.2022] - Wrote the PEP decumentation!</li>
 <li>[05.01.2022] - Small bug fix for add to Database logic!</li>
+<li>[06.01.2022] - Solved an issue for when a cached file is deleted!</li>

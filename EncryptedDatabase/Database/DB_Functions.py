@@ -182,10 +182,10 @@ def read_with_RSA(file_name, encrypted_file_name, param1, param2):
     :param param2: The second prime number needed to compute the RSA algorithm decryption
     Starts the file from the Files/ folder, after overwriting it with the decrypted version (that should be identical)
     """
-    before_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)).replace("\\", "/")
-    after_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
-    RSA.decrypt(before_path, after_path, param1, param2)
-    os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
+    before_path = (os.path.abspath(os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name))).replace("\\", "/")
+    after_path = (os.path.abspath(os.path.join(PM.SIMPLE_FILES_PATH, file_name))).replace("\\", "/")
+    if RSA.decrypt(before_path, after_path, param1, param2):
+        os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
 
 
 def read_with_DH(file_name, encrypted_file_name, param1, param2, param3, param4):
@@ -199,10 +199,10 @@ def read_with_DH(file_name, encrypted_file_name, param1, param2, param3, param4)
     :param param4: The fourth prime number needed to compute the Diffie-Hellman algorithm decryption
     Starts the file from the Files/ folder, after overwriting it with the decrypted version (that should be identical)
     """
-    before_path = (os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name)).replace("\\", "/")
-    after_path = (os.path.join(PM.SIMPLE_FILES_PATH, file_name)).replace("\\", "/")
-    DH.decrypt(before_path, after_path, param1, param2, param3, param4)
-    os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
+    before_path = (os.path.abspath(os.path.join(PM.ENCRYPTED_FILES_PATH, encrypted_file_name))).replace("\\", "/")
+    after_path = (os.path.abspath(os.path.join(PM.SIMPLE_FILES_PATH, file_name))).replace("\\", "/")
+    if DH.decrypt(before_path, after_path, param1, param2, param3, param4):
+        os.startfile((os.path.abspath(after_path)).replace("\\", "/"))
 
 
 # The method the users will interact with the DataBase. Being a secured method, it will log an Exception if something is wrong. We receive the original file name, and we fetch
@@ -217,8 +217,6 @@ def read_from_database(file_name):
     if not is_in_database(file_name):
         print(
             f"{PM.ConsoleColors.ERROR}[DATABASE] Error when attempting to read : File '{file_name}' is not in DataBase!{PM.ConsoleColors.ENDCHAR}")
-        return
-    if not PM.verify_file(file_name, True):
         return
     encrypted_file_name = file_name[:-4] + "_encrypted.txt"
     if not PM.verify_file(encrypted_file_name, False):

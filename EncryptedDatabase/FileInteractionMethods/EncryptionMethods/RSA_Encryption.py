@@ -51,7 +51,7 @@ def compute_d(e_value, t):
     This function computed the d value, which is a part of the private key
     :param e_value: The e value, computed using the above method
     :param t: The totient resulted from the two prime numbers
-    :return: The d value, part of the prrivate key
+    :return: The d value, part of the private key
     """
     gcd_value, x, y = EncryptionConstants.extended_gcd(e_value, t)
     if gcd_value != 1:
@@ -95,11 +95,16 @@ def decrypt(before_path, after_path, prime1, prime2):
     :param after_path: Path of the decrypted file, which will overwrite the cached version from the Files/ folder
     :param prime1: The first prime number generated (stored in the Database)
     :param prime2: The second prime number generated (stored in the Database)
+    :returns: True if the decryption went good, False otherwise
     """
+    if not os.path.exists(before_path):
+        print(f"{PM.ConsoleColors.ERROR}[RSA] Encrypted file does not exist!{PM.ConsoleColors.ENDCHAR}")
+        return False
     if not os.path.exists(after_path):
-        print(f"{PM.ConsoleColors.ERROR}[RSA] Simple file does not exist!{PM.ConsoleColors.ENDCHAR}")
-        return
-    os.remove(after_path)
+        print(
+            f"{PM.ConsoleColors.WARNING}[RSA] The file was deleted from the cache folder! It will now be restored!{PM.ConsoleColors.ENDCHAR}")
+    else:
+        os.remove(after_path)
     n_value, totient = compute_n_and_totient(prime1, prime2)
     e = compute_e(totient)
     private_exponent = compute_d(e, totient)
@@ -121,3 +126,5 @@ def decrypt(before_path, after_path, prime1, prime2):
 
     with open(after_path, "w") as output_file:
         output_file.write(plaintext)
+
+    return True
