@@ -20,3 +20,4 @@ continutul decriptat<br>
 <li>[04.01.2022] - Wrote the PEP decumentation!</li>
 <li>[05.01.2022] - Small bug fix for add to Database logic!</li>
 <li>[06.01.2022] - Solved an issue for when a cached file is deleted!</li>
+<li>[06.01.2022(Prezentare)] - Added "list" command to display all files' names as requested by the professor!</li>

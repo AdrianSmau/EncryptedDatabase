@@ -173,6 +173,33 @@ def add_to_database(file_path, encryption_alg):
         add_with_DH(file_name)
 
 
+def list_all():
+    """
+    Lists all files' names from Database
+    :return: All files names from Database
+    """
+    list_conn = sqlite3.connect(DATABASE_PATH)
+    try:
+        c = list_conn.cursor()
+        list_command = """SELECT id,name FROM files"""
+        c.execute(list_command)
+        count = 0
+        for file_id, file_name in c.fetchall():
+            count += 1
+            print(
+                f"{PM.ConsoleColors.METADATA}[ID #{file_id}] {file_name}!{PM.ConsoleColors.ENDCHAR}")
+        print(
+            f"{PM.ConsoleColors.SUCCESS}A total of {count} files displayed!{PM.ConsoleColors.ENDCHAR}")
+        c.close()
+        print(
+            f"{PM.ConsoleColors.SUCCESS}[DATABASE] List of all files in the Database provided!{PM.ConsoleColors.ENDCHAR}")
+    except sqlite3.Error as err:
+        print("[DATABASE] Failed to select from SqLite table", err)
+    finally:
+        if list_conn:
+            list_conn.close()
+
+
 def read_with_RSA(file_name, encrypted_file_name, param1, param2):
     """
     Decrypts a file encrypted with RSA and opens the decrypted file, after overriding the original file in the Files/ folder
